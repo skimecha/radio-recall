@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radio Recall Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1216;--panel:#161c22;--panel-2:#1d252c;--line:#2a343d;--line-bright:#3a4651;
+    --text:#e6ecf1;--text-dim:#8b97a3;--text-faint:#5c6770;
+    --amber:#ffb02e;--amber-dim:#c47f12;--green:#36d399;--green-dim:#1d9e75;
+    --red:#f0635f;--red-dim:#a32d2d;--blue:#4aa3ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Chakra Petch',sans-serif;
+    background:radial-gradient(120% 80% at 50% -10%, #1b2730 0%, var(--bg) 60%), var(--bg);
+    color:var(--text);min-height:100vh;display:flex;justify-content:center;
+    padding:2rem 1rem 4rem;-webkit-font-smoothing:antialiased;
+  }
+  .app{width:100%;max-width:680px}
+  .masthead{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:1rem;margin-bottom:1.5rem;animation:fadein .5s ease both}
+  .brand h1{font-size:26px;font-weight:700;letter-spacing:.18em;line-height:1}
+  .brand h1 span{color:var(--amber)}
+  .brand .sub{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--text-faint);margin-top:2px}
+  .freq-tag{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--amber);border:1px solid var(--line-bright);border-radius:4px;padding:4px 9px;letter-spacing:.08em;white-space:nowrap}
+
+  .statusbar{display:flex;align-items:center;gap:14px;margin-bottom:1rem;animation:fadein .5s .05s ease both}
+  .level-chip{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;background:var(--panel-2);border:1px solid var(--line-bright);color:var(--amber);padding:5px 11px;border-radius:4px}
+  .level-name{font-size:13px;letter-spacing:.06em;color:var(--text-dim)}
+  .pips{display:flex;gap:5px;margin-left:auto}
+  .pip{width:13px;height:13px;border-radius:50%;border:1px solid var(--line-bright);background:transparent;transition:background .25s,box-shadow .25s}
+  .pip.hit{background:var(--green);border-color:var(--green);box-shadow:0 0 7px -1px var(--green)}
+
+  .panel{background:linear-gradient(180deg,var(--panel) 0%,#13191e 100%);border:1px solid var(--line);border-radius:10px;padding:1.5rem;margin-bottom:1rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 18px 40px -28px #000;animation:fadein .5s .1s ease both}
+  .panel-label{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-faint);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+  .panel-label .live-dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint)}
+  .panel-label.rx .live-dot{background:var(--amber);animation:blink .8s steps(2,start) infinite}
+  .panel-label.listen .live-dot{background:var(--red);animation:blink .8s steps(2,start) infinite}
+
+  .settings{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:1.25rem;padding-bottom:1.1rem;border-bottom:1px dashed var(--line)}
+  .seg{display:inline-flex;border:1px solid var(--line-bright);border-radius:6px;overflow:hidden}
+  .seg button{border:none;border-radius:0;background:transparent;color:var(--text-dim);font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:.5rem .9rem}
+  .seg button.on{background:var(--amber);color:#1a1205;font-weight:700}
+  .setting-lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint)}
+  select{font-family:'Chakra Petch',sans-serif;background:var(--panel-2);color:var(--text);border:1px solid var(--line-bright);border-radius:6px;padding:.45rem .6rem;font-size:13px}
+  .speed{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint)}
+  input[type=range]{accent-color:var(--amber);width:90px}
+  .pause-wrap{display:flex;align-items:center;gap:8px}
+  .pause-wrap.hide{display:none}
+
+  .readout{position:relative;background:#0a0d10;border:1px solid var(--line);border-radius:8px;min-height:86px;display:flex;align-items:center;justify-content:center;padding:1rem 1.25rem;overflow:hidden}
+  .readout::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);opacity:.5}
+  .readout-text{font-family:'Share Tech Mono',monospace;font-size:26px;letter-spacing:.06em;color:var(--amber);text-align:center;line-height:1.45;text-shadow:0 0 12px rgba(255,176,46,.35);transition:filter .35s,opacity .35s}
+  .readout-text.small{font-size:17px;color:#ffd27a;letter-spacing:.02em}
+  .readout-text.hidden{filter:blur(9px);opacity:.7;user-select:none}
+  .readout-text.idle{color:var(--text-faint);text-shadow:none;font-size:18px}
+
+  .answer-zone{margin-top:1.25rem}
+  .listening-ind{display:flex;flex-direction:column;align-items:center;gap:.85rem}
+  .listen-badge{display:inline-flex;align-items:center;gap:10px;background:var(--red);color:#fff;font-weight:700;font-size:15px;letter-spacing:.1em;text-transform:uppercase;padding:.7rem 1.6rem;border-radius:6px;cursor:pointer;border:1px solid var(--red);animation:breathe 1.3s ease-in-out infinite}
+  .listen-badge .mic-dot{width:9px;height:9px;border-radius:50%;background:#fff;animation:blink .8s steps(2,start) infinite}
+  .transcript{width:100%;text-align:center;min-height:26px;font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--text-faint);letter-spacing:.04em;background:#0a0d10;border:1px solid var(--line);border-radius:6px;padding:.55rem .8rem}
+  .transcript.live{color:var(--text)}
+
+  button{font-family:'Chakra Petch',sans-serif;cursor:pointer;border-radius:6px;border:1px solid var(--line-bright);background:var(--panel-2);color:var(--text);font-size:14px;letter-spacing:.06em;font-weight:500;padding:.6rem 1.3rem;transition:transform .08s,background .15s,border-color .15s;display:inline-flex;align-items:center;gap:9px}
+  button:hover{background:#27313a;border-color:#46535f}
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.4;cursor:default}
+  button svg{width:17px;height:17px;display:block}
+  .btn-primary{background:var(--amber);border-color:var(--amber);color:#1a1205;font-weight:700;letter-spacing:.08em}
+  .btn-primary:hover{background:#ffc154;border-color:#ffc154}
+  .btn-stop{background:transparent;border-color:var(--red-dim);color:var(--red)}
+  .btn-stop:hover{background:rgba(240,99,95,.1);border-color:var(--red)}
+  .link-btn{background:none;border:none;color:var(--text-faint);font-size:12px;letter-spacing:.1em;text-transform:uppercase;text-decoration:underline;text-underline-offset:3px;padding:.25rem}
+  .link-btn:hover{background:none;color:var(--text-dim)}
+  .note{font-size:12px;color:var(--text-faint);text-align:center;letter-spacing:.04em;min-height:16px}
+
+  .type-zone{display:none;flex-direction:column;align-items:center;gap:.75rem;margin-top:.4rem}
+  input[type=text]{width:100%;font-family:'Share Tech Mono',monospace;font-size:18px;text-align:center;letter-spacing:.06em;background:#0a0d10;border:1px solid var(--line-bright);border-radius:6px;color:var(--text);padding:.7rem 1rem}
+  input[type=text]:focus{outline:none;border-color:var(--amber-dim);box-shadow:0 0 0 3px rgba(255,176,46,.12)}
+
+  .controls{display:flex;align-items:center;gap:10px;margin-top:1.25rem;flex-wrap:wrap;justify-content:center}
+  .feedback{margin-top:1rem;border-radius:7px;padding:.75rem .95rem;font-size:14px;line-height:1.55;border:1px solid}
+  .feedback.ok{background:rgba(54,211,153,.1);border-color:var(--green-dim);color:var(--green)}
+  .feedback.err{background:rgba(240,99,95,.09);border-color:var(--red-dim);color:#ff9a97}
+  .feedback.up{background:rgba(74,163,255,.1);border-color:#2a6bb0;color:#8fc4ff}
+  .feedback .heard{font-family:'Share Tech Mono',monospace;font-size:12px;opacity:.8;margin-top:5px}
+  .feedback em{color:var(--text);font-style:normal;opacity:.9}
+  .countdown{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-faint);margin-top:6px}
+
+  .ladder{display:flex;flex-direction:column;gap:5px}
+  .rung{display:flex;align-items:center;gap:11px;padding:.5rem .8rem;border-radius:5px;border:1px solid transparent;font-size:13px;letter-spacing:.04em;color:var(--text-faint)}
+  .rung .n{font-family:'Share Tech Mono',monospace;font-size:12px;width:22px;text-align:right}
+  .rung .ico{width:15px;text-align:center;font-size:12px}
+  .rung.done,.rung.done .n,.rung.done .ico{color:var(--green)}
+  .rung.current{background:var(--panel-2);border-color:var(--amber-dim);color:var(--amber);font-weight:600}
+  .rung.current .n,.rung.current .ico{color:var(--amber)}
+  .footer{text-align:center;margin-top:1.5rem;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint)}
+
+  @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(240,99,95,.5)}50%{box-shadow:0 0 0 9px rgba(240,99,95,0)}}
+  @keyframes blink{50%{opacity:.3}}
+  @media(max-width:520px){.brand h1{font-size:21px}.readout-text{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="masthead">
+    <div class="brand">
+      <h1>RADIO<span>·</span>RECALL</h1>
+      <div class="sub">Listen · Retain · Read back</div>
+    </div>
+    <div class="freq-tag" id="freq-tag">CH 01 / 15</div>
+  </div>
+
+  <div class="statusbar">
+    <span class="level-chip" id="lvl-chip">LVL 01</span>
+    <span class="level-name" id="lvl-name">Single words</span>
+    <div class="pips" id="pips"></div>
+  </div>
+
+  <div class="panel">
+    <div class="settings">
+      <div class="seg" id="mode-seg">
+        <button id="seg-step" class="on" onclick="setMode('step')">Step</button>
+        <button id="seg-cont" onclick="setMode('cont')">Continuous</button>
+      </div>
+      <div class="pause-wrap hide" id="pause-wrap">
+        <span class="setting-lbl">Pause</span>
+        <select id="pause-sel">
+          <option value="1500">1.5 s</option>
+          <option value="3000" selected>3 s</option>
+          <option value="5000">5 s</option>
+        </select>
+      </div>
+      <div class="speed">SPD
+        <input type="range" id="speed" min="0.6" max="1.2" step="0.05" value="0.9">
+        <span id="speed-val" style="font-family:'Share Tech Mono',monospace;color:var(--text-dim);width:30px">0.9×</span>
+      </div>
+    </div>
+
+    <div class="panel-label" id="panel-label"><span class="live-dot"></span><span id="panel-label-text">Standby</span></div>
+
+    <div class="readout">
+      <div class="readout-text idle hidden" id="readout">Press start to begin</div>
+    </div>
+
+    <div class="answer-zone" id="answer-zone" style="display:none">
+      <div class="listening-ind" id="listening-ind">
+        <div class="listen-badge" id="listen-badge" onclick="stopMicEarly()"><span class="mic-dot"></span> Listening… tap to stop</div>
+        <div class="transcript" id="transcript">…</div>
+        <button class="link-btn" onclick="toggleType()">Type instead</button>
+        <div class="note" id="mic-note"></div>
+      </div>
+      <div class="type-zone" id="type-zone">
+        <input type="text" id="answer-input" placeholder="type what you heard" autocomplete="off" autocorrect="off" spellcheck="false">
+        <div style="display:flex;gap:10px;align-items:center">
+          <button onclick="grade(document.getElementById('answer-input').value)">Submit</button>
+          <button class="link-btn" onclick="toggleType()">Use mic instead</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="feedback-box"></div>
+
+    <div class="controls" id="controls">
+      <button class="btn-primary" id="btn-primary" onclick="primaryAction()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <span id="primary-label">Transmit</span>
+      </button>
+      <button class="btn-stop" id="btn-stop" onclick="stopSession()" style="display:none">Stop</button>
+      <button id="btn-next" onclick="beginRound(true)" style="display:none">Next ›</button>
+      <button id="btn-retry" onclick="beginRound(false)" style="display:none">↺ Retry</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label" style="margin-bottom:1rem"><span class="live-dot"></span>Progression — 10 correct in a row advances</div>
+    <div class="ladder" id="ladder"></div>
+  </div>
+
+  <div class="footer">Standalone build · Chrome or Edge · grant mic once on https</div>
+</div>
+
+<script>
+const LEVELS=[
+  {name:"Single words",type:"word",count:1},{name:"Two words",type:"word",count:2},{name:"Three words",type:"word",count:3},
+  {name:"Single digits",type:"number",count:1},{name:"3-digit string",type:"number",count:3},{name:"5-digit string",type:"number",count:5},{name:"7-digit string",type:"number",count:7},
+  {name:"Word + number",type:"mixed",count:2},{name:"Short sentence",type:"sentence",count:1},{name:"Two sentences",type:"sentence",count:2},
+  {name:"Math problem",type:"math",count:1},{name:"Word problem",type:"wordproblem",count:1},
+  {name:"ATC: one item",type:"atc1",count:1},{name:"ATC: two items",type:"atc2",count:1},{name:"ATC: full clearance",type:"atcfull",count:1},
+];
+const WORDS=["apple","radio","thunder","oxygen","delta","falcon","margin","vector","signal","canyon","foxtrot","harbor","india","juliet","kilo","lima","mike","november","oscar","papa","quebec","romeo","sierra","tango","uniform","victor","whiskey","yankee","bravo","charlie","echo","golf","hotel"];
+const SENTENCES=["The weather is clear with visibility ten miles.","Turn left at the intersection and proceed north.","Reduce speed and maintain current altitude.","Contact ground control on one two one point nine.","The runway is wet following recent rainfall.","Hold position and await further instructions.","Traffic is reported twelve miles to the northeast.","Climb and maintain eight thousand feet.","Report when you have the field in sight.","Wind is from the south at fifteen knots."];
+const MATH=[{q:"What is twelve plus forty seven?",a:"59"},{q:"What is eighty minus thirty three?",a:"47"},{q:"What is six times eight?",a:"48"},{q:"What is one hundred divided by four?",a:"25"},{q:"What is seventeen plus twenty six?",a:"43"},{q:"What is ninety four minus fifty seven?",a:"37"},{q:"What is nine times seven?",a:"63"}];
+const WORDPROBLEMS=[{q:"A plane takes off at two thousand feet and climbs three thousand more. What is the final altitude?",a:"5000"},{q:"You have twelve gallons of fuel and burn four gallons per hour. How many hours can you fly?",a:"3"},{q:"The runway is eight thousand feet long. You use five thousand on landing. How many feet remain?",a:"3000"},{q:"You fly at one hundred and twenty knots for two hours. How many nautical miles do you cover?",a:"240"}];
+const ATC1=[{q:"Cessna Four Sierra Kilo, fly heading two seven zero.",key:"270"},{q:"Piper Eight Romeo, climb and maintain six thousand.",key:"6000"},{q:"November Two Uniform, squawk four three two one.",key:"4321"},{q:"Alpha Tango Seven, contact approach on one two four point five.",key:"124.5"},{q:"Skyhawk Niner Foxtrot, descend and maintain three thousand five hundred.",key:"3500"}];
+const ATC2=[{q:"Cessna Two Victor Golf, fly heading zero nine zero, climb and maintain four thousand.",key:"090,4000"},{q:"Bonanza Five Hotel, squawk four four seven two, contact departure one two zero point nine.",key:"4472,120.9"},{q:"Piper Three Kilo, turn right heading one eight zero, descend and maintain two thousand five hundred.",key:"180,2500"}];
+const ATCFULL=[{q:"November Six Uniform Victor Papa, cleared to Addison airport via direct MAYES, climb and maintain five thousand, departure frequency one two four point three, squawk four four seven two.",items:["addison","mayes","5000","124.3","4472"],model:"Cleared to Addison airport via direct MAYES, climb and maintain five thousand, departure frequency one two four point three, squawk four four seven two, Six Uniform Victor Papa."},{q:"Cessna Eight Zero Sierra Charlie, cleared to Love Field via BONHAM intersection, climb and maintain three thousand, contact departure one two zero point eight, squawk three three one five.",items:["love","bonham","3000","120.8","3315"],model:"Cleared to Love Field via BONHAM, climb and maintain three thousand, departure one two zero point eight, squawk three three one five, Eight Zero Sierra Charlie."}];
+
+let lvl=0,streak=0,rate=0.9;
+let mode="step",running=false,pauseMs=3000;
+let current=null,phase="idle",loopTimer=null,countTimer=null,safetyTimer=null;
+const STREAK_WIN=10;
+
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function randDigits(n){return Array.from({length:n},()=>Math.floor(Math.random()*10)).join(" ");}
+function randWords(n){let w=[];while(w.length<n){let x=rand(WORDS);if(!w.includes(x))w.push(x);}return w.join(" ");}
+function digitWord(n){return ["zero","one","two","three","four","five","six","seven","eight","nine"][parseInt(n)]||n;}
+
+const ONES={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9};
+const ALT="(one|two|three|four|five|six|seven|eight|nine)";
+function numCanon(str){
+  let s=" "+str.toLowerCase()+" ";
+  s=s.replace(new RegExp("\\b"+ALT+"\\s+thousand\\s+"+ALT+"\\s+hundred\\b","g"),(m,a,b)=>" "+(ONES[a]*1000+ONES[b]*100)+" ");
+  s=s.replace(new RegExp("\\b"+ALT+"\\s+thousand\\b","g"),(m,a)=>" "+(ONES[a]*1000)+" ");
+  s=s.replace(new RegExp("\\b"+ALT+"\\s+hundred\\b","g"),(m,a)=>" "+(ONES[a]*100)+" ");
+  s=s.replace(/\bzero\b|\boh\b/g,"0").replace(/\bone\b/g,"1").replace(/\btwo\b/g,"2").replace(/\bthree\b/g,"3").replace(/\bfour\b/g,"4").replace(/\bfive\b/g,"5").replace(/\bsix\b/g,"6").replace(/\bseven\b/g,"7").replace(/\beight\b/g,"8").replace(/\bnine\b|\bniner\b/g,"9");
+  return s.replace(/[^0-9]/g,"");
+}
+const CARD={zero:0,oh:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,niner:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+function spokenToNumber(str){
+  const toks=str.toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean);
+  let total=0,cur=0,found=false;
+  for(const t of toks){
+    if(CARD[t]!==undefined){cur+=CARD[t];found=true;}
+    else if(t==="hundred"){cur*=100;found=true;}
+    else if(t==="thousand"){total+=cur*1000;cur=0;found=true;}
+    else if(/^\d+$/.test(t)){cur+=parseInt(t);found=true;}
+  }
+  return found?total+cur:null;
+}
+function wordCanon(str){
+  let s=" "+str.toLowerCase().replace(/[^a-z0-9\s]/g," ")+" ";
+  s=s.replace(/\bzero\b|\boh\b/g,"0").replace(/\bone\b/g,"1").replace(/\btwo\b/g,"2").replace(/\bthree\b/g,"3").replace(/\bfour\b/g,"4").replace(/\bfive\b/g,"5").replace(/\bsix\b/g,"6").replace(/\bseven\b/g,"7").replace(/\beight\b/g,"8").replace(/\bnine\b|\bniner\b/g,"9");
+  return s.replace(/\s+/g," ").trim();
+}
+
+function generatePrompt(){
+  const L=LEVELS[lvl];let display="",spoken="",answer="",isComplex=false,pd=null;
+  switch(L.type){
+    case "word": display=randWords(L.count);spoken=display;answer=display.toLowerCase();break;
+    case "number":{let d=randDigits(L.count);display=d;spoken=d.split(" ").map(digitWord).join(" ");answer=d.replace(/ /g,"");break;}
+    case "mixed":{let w=rand(WORDS),n=Math.floor(Math.random()*9)+1;display=w+" "+n;spoken=w+" "+digitWord(n);answer=(w+" "+n).toLowerCase();break;}
+    case "sentence":{let s=[];for(let i=0;i<L.count;i++){let x=rand(SENTENCES);if(!s.includes(x))s.push(x);}display=s.join(" ");spoken=display;answer=display.toLowerCase();isComplex=true;break;}
+    case "math":{let m=rand(MATH);display=m.q;spoken=m.q;answer=m.a;isComplex=true;break;}
+    case "wordproblem":{let wp=rand(WORDPROBLEMS);display=wp.q;spoken=wp.q;answer=wp.a;isComplex=true;break;}
+    case "atc1":{let a=rand(ATC1);display=a.q;spoken=a.q;answer=a.key;isComplex=true;break;}
+    case "atc2":{let a=rand(ATC2);display=a.q;spoken=a.q;answer=a.key;isComplex=true;break;}
+    case "atcfull":{let a=rand(ATCFULL);display=a.q;spoken=a.q;answer=a.items.join("|");pd={...a};isComplex=true;break;}
+  }
+  return {display,spoken,answer,isComplex,pd};
+}
+
+function setLabel(text,cls){
+  document.getElementById("panel-label-text").textContent=text;
+  document.getElementById("panel-label").className="panel-label"+(cls?" "+cls:"");
+}
+function clearTimers(){clearTimeout(loopTimer);clearInterval(countTimer);clearTimeout(safetyTimer);}
+
+function primaryAction(){
+  if(mode==="cont"){running=true;document.getElementById("btn-stop").style.display="inline-flex";}
+  beginRound(true);
+}
+function stopSession(){
+  running=false;clearTimers();
+  try{speechSynthesis.cancel();}catch(e){}
+  try{if(recog)recog.abort();}catch(e){}
+  phase="idle";
+  document.getElementById("btn-stop").style.display="none";
+  document.getElementById("answer-zone").style.display="none";
+  document.getElementById("feedback-box").innerHTML="";
+  resetReadout();
+  showPrimary(true);
+  setLabel("Standby","");
+}
+
+function beginRound(newItem){
+  clearTimers();
+  document.getElementById("btn-next").style.display="none";
+  document.getElementById("btn-retry").style.display="none";
+  document.getElementById("feedback-box").innerHTML="";
+  if(newItem||!current)current=generatePrompt();
+  const r=document.getElementById("readout");
+  r.textContent=current.display;
+  r.className="readout-text hidden"+(current.isComplex?" small":"");
+  document.getElementById("answer-zone").style.display="none";
+  showPrimary(false);
+  if(mode==="cont"&&running)document.getElementById("btn-stop").style.display="inline-flex";
+  playTTS();
+}
+
+function playTTS(){
+  phase="playing";setLabel("Receiving transmission","rx");
+  const utt=new SpeechSynthesisUtterance(current.spoken);
+  utt.rate=rate;
+  utt.onend=()=>{ if(phase!=="playing")return; setTimeout(()=>{ if(useType){showTypeZone();}else{armMic();} },450); };
+  try{speechSynthesis.cancel();}catch(e){}
+  speechSynthesis.speak(utt);
+}
+
+let useType=false;
+function showTypeZone(){
+  phase="answering";setLabel("Read back","");
+  document.getElementById("answer-zone").style.display="block";
+  document.getElementById("listening-ind").style.display="none";
+  const tz=document.getElementById("type-zone");tz.style.display="flex";
+  document.getElementById("answer-input").value="";document.getElementById("answer-input").focus();
+}
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const SR_OK=!!SR;
+let recog=null,finalText="";
+function armMic(){
+  if(!SR_OK){useType=true;showTypeZone();return;}
+  phase="listening";setLabel("Listening","listen");
+  document.getElementById("answer-zone").style.display="block";
+  document.getElementById("type-zone").style.display="none";
+  document.getElementById("listening-ind").style.display="flex";
+  document.getElementById("transcript").textContent="…";
+  document.getElementById("transcript").className="transcript";
+  document.getElementById("mic-note").textContent="";
+  finalText="";
+  if(!recog){
+    recog=new SR();recog.lang="en-US";recog.interimResults=true;recog.maxAlternatives=1;recog.continuous=false;
+    recog.onresult=(e)=>{
+      let interim="";
+      for(let i=e.resultIndex;i<e.results.length;i++){const tr=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=tr;else interim+=tr;}
+      const t=document.getElementById("transcript");t.textContent=(finalText+interim)||"…";t.className="transcript live";
+    };
+    recog.onerror=(e)=>{
+      if(e.error==="not-allowed"||e.error==="service-not-allowed"){document.getElementById("mic-note").textContent="Mic blocked — allow access, or use Type instead.";phase="answering";return;}
+      if(e.error==="no-speech"){handleNoSpeech();return;}
+    };
+    recog.onend=()=>{
+      clearTimeout(safetyTimer);
+      if(phase!=="listening")return;
+      const s=finalText.trim();
+      if(s)grade(s); else handleNoSpeech();
+    };
+  }
+  try{recog.start();}catch(e){setTimeout(()=>{try{recog.start();}catch(_){}}, 250);}
+  safetyTimer=setTimeout(()=>{try{recog.stop();}catch(e){}},12000);
+}
+function stopMicEarly(){if(phase==="listening"){try{recog.stop();}catch(e){}}}
+function handleNoSpeech(){
+  document.getElementById("mic-note").textContent="No speech detected.";
+  if(running){phase="idle";loopTimer=setTimeout(()=>beginRound(false),1200);}
+  else{phase="answering";document.getElementById("btn-retry").style.display="inline-flex";}
+}
+
+function grade(raw){
+  raw=(raw||"").trim();
+  if(!raw||raw==="…")return;
+  clearTimeout(safetyTimer);
+  const L=LEVELS[lvl];let correct=false,fb="";
+  if(L.type==="atcfull"&&current.pd){
+    const items=current.pd.items,rc=raw.toLowerCase(),rn=numCanon(raw);
+    const hit=it=>/^[a-z]+$/.test(it)?rc.includes(it):rn.includes(it);
+    correct=items.every(hit);
+    fb=correct?"All items captured.":"Missed: "+items.filter(it=>!hit(it)).join(", ")+".<br>Model: <em>"+current.pd.model+"</em>";
+  } else if(L.type==="sentence"){
+    const ew=wordCanon(current.answer).split(/\s+/),gw=wordCanon(raw).split(/\s+/);
+    const m=ew.filter(w=>w.length>2&&gw.includes(w)).length;correct=m/ew.length>=0.7;
+    fb=correct?"Close enough.":"Expected: "+current.answer;
+  } else if(L.type==="math"||L.type==="wordproblem"){
+    correct=spokenToNumber(raw)===parseInt(current.answer);fb=correct?"Correct.":"Answer: "+current.answer;
+  } else if(L.type==="atc1"||L.type==="atc2"){
+    const parts=current.answer.split(","),rn=numCanon(raw);correct=parts.every(p=>rn.includes(numCanon(p)));
+    fb=correct?"Correct.":"Expected: "+current.answer.replace(/,/g," · ");
+  } else if(L.type==="number"){
+    correct=numCanon(raw)===current.answer;fb=correct?"Correct.":"Expected: "+current.answer;
+  } else {
+    correct=wordCanon(raw)===wordCanon(current.answer);fb=correct?"Correct.":"Expected: "+current.answer;
+  }
+
+  phase="scored";
+  document.getElementById("readout").classList.remove("hidden");
+  document.getElementById("answer-zone").style.display="none";
+  setLabel(correct?"Correct":"Review","");
+  streak=correct?streak+1:0;renderPips();
+  let cls=correct?"ok":"err",lm="";
+  if(correct&&streak>=STREAK_WIN&&lvl<LEVELS.length-1){lvl++;streak=0;cls="up";lm=" — Level up. Now: <em>"+LEVELS[lvl].name+"</em>";renderLadder();updateStatus();}
+  else if(correct&&streak>=STREAK_WIN){lm=" — All levels complete.";}
+  else{updateStatus();}
+  const heard=(raw&&L.type!=="number")?`<div class="heard">heard: "${raw}"</div>`:"";
+  document.getElementById("feedback-box").innerHTML=`<div class="feedback ${cls}">${fb}${lm}<div class="countdown" id="countdown"></div>${heard}</div>`;
+
+  if(mode==="cont"&&running){
+    const goNext=correct; const delay=pauseMs;
+    let remain=Math.ceil(delay/1000);
+    const cd=document.getElementById("countdown");
+    cd.textContent=(goNext?"Next transmission in ":"Replaying in ")+remain+"…";
+    countTimer=setInterval(()=>{remain--;if(remain>0)cd.textContent=(goNext?"Next transmission in ":"Replaying in ")+remain+"…";},1000);
+    loopTimer=setTimeout(()=>{clearInterval(countTimer);beginRound(goNext);},delay);
+  } else {
+    showPrimary(false);
+    document.getElementById("btn-next").style.display="inline-flex";
+    document.getElementById("btn-retry").style.display="inline-flex";
+    document.getElementById("btn-primary").style.display="none";
+  }
+}
+
+function showPrimary(show){
+  const p=document.getElementById("btn-primary");
+  p.style.display=show?"inline-flex":"none";
+  p.disabled=!show;
+}
+function resetReadout(){
+  const r=document.getElementById("readout");
+  r.textContent="Press start to begin";r.className="readout-text idle hidden";
+}
+
+function setMode(m){
+  mode=m;
+  document.getElementById("seg-step").classList.toggle("on",m==="step");
+  document.getElementById("seg-cont").classList.toggle("on",m==="cont");
+  document.getElementById("pause-wrap").classList.toggle("hide",m!=="cont");
+  document.getElementById("primary-label").textContent=m==="cont"?"Start session":"Transmit";
+  stopSession();
+}
+function toggleType(){
+  useType=!useType;
+  if(phase==="listening"){try{recog.stop();}catch(e){}}
+  if(useType)showTypeZone();
+  else{document.getElementById("type-zone").style.display="none";if(phase==="answering")armMic();else document.getElementById("listening-ind").style.display="flex";}
+}
+
+function renderPips(){const p=document.getElementById("pips");p.innerHTML="";for(let i=0;i<STREAK_WIN;i++){const d=document.createElement("div");d.className="pip"+(i<streak?" hit":"");p.appendChild(d);}}
+function updateStatus(){const n=String(lvl+1).padStart(2,"0");document.getElementById("lvl-chip").textContent="LVL "+n;document.getElementById("lvl-name").textContent=LEVELS[lvl].name;document.getElementById("freq-tag").textContent="CH "+n+" / 15";}
+function renderLadder(){const el=document.getElementById("ladder");el.innerHTML="";LEVELS.forEach((L,i)=>{const done=i<lvl,cur=i===lvl;const row=document.createElement("div");row.className="rung"+(cur?" current":done?" done":"");const ico=done?"✓":cur?"▸":"·";row.innerHTML=`<span class="n">${String(i+1).padStart(2,"0")}</span><span class="ico">${ico}</span><span>${L.name}</span>`;el.appendChild(row);});}
+
+document.getElementById("answer-input").addEventListener("keydown",e=>{if(e.key==="Enter")grade(e.target.value);});
+document.getElementById("speed").addEventListener("input",e=>{rate=parseFloat(e.target.value);document.getElementById("speed-val").textContent=rate.toFixed(2).replace(/0$/,"")+"×";});
+document.getElementById("pause-sel").addEventListener("change",e=>{pauseMs=parseInt(e.target.value);});
+if(!SR_OK){useType=true;document.getElementById("mic-note").textContent="Speech recognition unavailable — use Type instead, or try Chrome/Edge.";}
+renderPips();renderLadder();updateStatus();
+</script>
+</body>
+</html>
