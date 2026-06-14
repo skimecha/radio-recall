@@ -88,7 +88,9 @@
   .feedback em{color:var(--text);font-style:normal;opacity:.95}
   .countdown{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text-faint);margin-top:6px}
   .ladder{display:flex;flex-direction:column;gap:5px}
-  .rung{display:flex;align-items:center;gap:11px;padding:.5rem .8rem;border-radius:5px;border:1px solid transparent;font-size:13px;letter-spacing:.04em;color:var(--text-faint)}
+  .rung{display:flex;align-items:center;gap:11px;padding:.5rem .8rem;border-radius:5px;border:1px solid transparent;font-size:13px;letter-spacing:.04em;color:var(--text-faint);cursor:pointer;transition:background .12s ease,color .12s ease}
+  .rung:hover{background:var(--panel-2)}
+  .rung:focus-visible{outline:none;border-color:var(--amber-dim)}
   .rung .n{font-family:'Share Tech Mono',monospace;font-size:12px;width:22px;text-align:right}
   .rung .ico{width:15px;text-align:center;font-size:12px}
   .rung .req{margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:11px;opacity:.65}
@@ -482,7 +484,8 @@ window.addEventListener("resize",()=>{if(aviate){sizeCanvas();drawInstrument(Mat
 
 function renderPips(){const need=winFor(lvl);const p=document.getElementById("pips");p.innerHTML="";for(let i=0;i<need;i++){const d=document.createElement("div");d.className="pip"+(i<streak?" hit":"");p.appendChild(d);}}
 function updateStatus(){const n=String(lvl+1).padStart(2,"0");document.getElementById("lvl-chip").textContent="LVL "+n;document.getElementById("lvl-name").textContent=LEVELS[lvl].name;document.getElementById("freq-tag").textContent="CH "+n+" / 15";}
-function renderLadder(){const el=document.getElementById("ladder");el.innerHTML="";LEVELS.forEach((L,i)=>{const done=i<lvl,cur=i===lvl;const row=document.createElement("div");row.className="rung"+(cur?" current":done?" done":"");const ico=done?"✓":cur?"▸":"·";row.innerHTML='<span class="n">'+String(i+1).padStart(2,"0")+'</span><span class="ico">'+ico+'</span><span>'+L.name+'</span><span class="req">×'+winFor(i)+'</span>';el.appendChild(row);});}
+function renderLadder(){const el=document.getElementById("ladder");el.innerHTML="";LEVELS.forEach((L,i)=>{const done=i<lvl,cur=i===lvl;const row=document.createElement("div");row.className="rung"+(cur?" current":done?" done":"");const ico=done?"✓":cur?"▸":"·";row.innerHTML='<span class="n">'+String(i+1).padStart(2,"0")+'</span><span class="ico">'+ico+'</span><span>'+L.name+'</span><span class="req">×'+winFor(i)+'</span>';row.setAttribute("role","button");row.tabIndex=0;row.title="Start at level "+(i+1)+": "+L.name;row.addEventListener("click",()=>jumpToLevel(i));row.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();jumpToLevel(i);}});el.appendChild(row);});}
+function jumpToLevel(i){if(i<0||i>=LEVELS.length)return;stopSession();if(i!==lvl)streak=0;lvl=i;save();renderPips();renderLadder();updateStatus();}
 
 document.getElementById("answer-input").addEventListener("keydown",e=>{if(e.key==="Enter")grade(e.target.value);});
 document.getElementById("speed").addEventListener("input",e=>{rate=parseFloat(e.target.value);document.getElementById("speed-val").textContent=rate.toFixed(2).replace(/0$/,"")+"×";save();});
