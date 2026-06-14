@@ -100,6 +100,15 @@
   @keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(240,99,95,.5)}50%{box-shadow:0 0 0 9px rgba(240,99,95,0)}}
   @keyframes blink{50%{opacity:.3}}
   @media(max-width:520px){.brand h1{font-size:21px}.readout-text{font-size:21px}}
+  .explainer{border:1px solid var(--line);border-radius:8px;background:var(--panel-2);margin-bottom:1rem;overflow:hidden;animation:fadein .5s .03s ease both}
+  .explainer summary{cursor:pointer;list-style:none;padding:.7rem 1rem;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;gap:8px;user-select:none}
+  .explainer summary::-webkit-details-marker{display:none}
+  .explainer summary::before{content:"\25B8";color:var(--text-dim);transition:transform .15s ease}
+  .explainer[open] summary::before{transform:rotate(90deg)}
+  .explainer .body{padding:.8rem 1rem 1rem;font-size:13px;line-height:1.55;color:var(--text-dim);border-top:1px solid var(--line)}
+  .explainer .body p{margin:0 0 .6rem}
+  .explainer .body p:last-child{margin-bottom:0}
+  .explainer .body strong{color:var(--text);font-weight:600}
 </style>
 </head>
 <body>
@@ -111,6 +120,14 @@
     </div>
     <div class="freq-tag" id="freq-tag">CH 01 / 15</div>
   </div>
+
+  <details class="explainer" open>
+    <summary>What is this?</summary>
+    <div class="body">
+      <p>Radio Recall trains the aviation listen, retain, read-back loop. A transmission plays aloud while the on-screen text stays blurred, so you train by ear. Speak your readback and it gets transcribed and scored.</p>
+      <p><strong>Continuous</strong> runs prompts back to back. <strong>Aviate</strong> adds a keyboard tracking task (arrows or WASD) you keep centered while you copy the call, simulating flying and talking at once. Works best in Chrome or Edge.</p>
+    </div>
+  </details>
 
   <div class="statusbar">
     <span class="level-chip" id="lvl-chip">LVL 01</span>
@@ -197,7 +214,7 @@ const ATC1=[{q:"Cessna Four Sierra Kilo, fly heading two seven zero.",key:"270"}
 const ATC2=[{q:"Cessna Two Victor Golf, fly heading zero nine zero, climb and maintain four thousand.",key:"090,4000"},{q:"Bonanza Five Hotel, squawk four four seven two, contact departure one two zero point nine.",key:"4472,120.9"},{q:"Piper Three Kilo, turn right heading one eight zero, descend and maintain two thousand five hundred.",key:"180,2500"}];
 const ATCFULL=[{q:"November Six Uniform Victor Papa, cleared to Addison airport via direct MAYES, climb and maintain five thousand, departure frequency one two four point three, squawk four four seven two.",items:["addison","mayes","5000","124.3","4472"],model:"Cleared to Addison airport via direct MAYES, climb and maintain five thousand, departure frequency one two four point three, squawk four four seven two, Six Uniform Victor Papa."},{q:"Cessna Eight Zero Sierra Charlie, cleared to Love Field via BONHAM intersection, climb and maintain three thousand, contact departure one two zero point eight, squawk three three one five.",items:["love","bonham","3000","120.8","3315"],model:"Cleared to Love Field via BONHAM, climb and maintain three thousand, departure one two zero point eight, squawk three three one five, Eight Zero Sierra Charlie."}];
 
-let lvl=0,streak=0,rate=0.9,mode="step",running=false,pauseMs=3000,aviate=false;
+let lvl=0,streak=0,rate=0.9,mode="cont",running=false,pauseMs=3000,aviate=true;
 let current=null,phase="idle",loopTimer=null,countTimer=null,safetyTimer=null,useType=false;
 const CTRL_TH=65;
 const SAVE_KEY="radioRecall.v1";
@@ -232,7 +249,7 @@ function wordCanon(str){
 }
 
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({v:1,lvl,streak,rate,pauseMs,mode,aviate}));}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY));if(s){lvl=s.lvl||0;streak=s.streak||0;rate=typeof s.rate==="number"?s.rate:0.9;pauseMs=s.pauseMs||3000;mode=s.mode||"step";aviate=!!s.aviate;}}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(SAVE_KEY));if(s){lvl=s.lvl||0;streak=s.streak||0;rate=typeof s.rate==="number"?s.rate:0.9;pauseMs=s.pauseMs||3000;mode=s.mode||"cont";aviate=s.aviate===undefined?true:!!s.aviate;}}catch(e){}}
 function resetProgress(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}lvl=0;streak=0;renderPips();renderLadder();updateStatus();stopSession();}
 
 function generatePrompt(){
